@@ -1,0 +1,60 @@
+version: '3.8'
+services:
+  worker:
+    build:
+      context: ./worker
+      dockerfile: Dockerfile
+    networks:
+      - back-tier
+
+  vote:
+    build:
+      context: ./vote
+      dockerfile: Dockerfile
+    volumes:
+      - ./vote:/usr/local/app
+    networks:
+      - front-tier
+      - back-tier
+
+  seed-data:
+    build:
+      context: ./seed-data
+      dockerfile: Dockerfile
+    networks:
+      - front-tier
+    profiles: ["seed"]
+
+  result:
+    build:
+      context: ./result
+      dockerfile: Dockerfile
+    networks:
+      - back-tier
+    volumes:
+      - ./result:/usr/local/app
+    ports:
+      - "5001:80"
+      - "127.0.0.1:9229:9229"
+
+  db:
+    image: postgres:15-alpine
+    volumes:
+      - "db-data:/var/lib/postgresql/data"
+      - "./healthchecks:/healthchecks"
+    networks:
+      - back-tier
+
+  redis:
+    image: redis
+    volumes:
+      - "./healthchecks:/healthchecks"
+    networks:
+      - back-tier
+
+networks:
+  front-tier:
+  back-tier:
+
+volumes:
+  db-data:

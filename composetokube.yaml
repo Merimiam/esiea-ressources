@@ -1,0 +1,77 @@
+version: '3.8'
+services:
+  worker:
+    build:
+      context: ./worker
+      dockerfile: Dockerfile
+    depends_on:
+     - redis
+     - db
+    networks:
+      - back-tier
+
+  vote:
+    build:
+      context: ./vote
+      dockerfile: Dockerfile
+    volumes:
+      - ./vote:/usr/local/app
+    ports:
+      - "5002:80"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    networks:
+      - front-tier
+      - back-tier
+
+
+  result:
+    build:
+      context: ./result
+      dockerfile: Dockerfile
+    depends_on:
+      - db
+    volumes:
+      - ./result:/usr/local/app
+    ports:
+      - "5001:80"
+      - "127.0.0.1:9229:9229"
+    networks:
+      - back-tier
+
+  db:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_PASSWORD: postgres
+    volumes:
+      - "./postgres:/var/lib/postgresql/data"
+      - "./healthchecks:/healthchecks"
+      - "./init:/docker-entrypoint-initdb.d"
+    healthcheck:
+      test: /healthchecks/postgres.sh
+      interval: 5s
+    networks:
+      - back-tier
+
+
+
+  redis:
+    image: redis
+    volumes:
+      - "./healthchecks:/healthchecks"
+    healthcheck:
+      test: /healthchecks/redis.sh
+      interval: 5s
+    networks:
+      - back-tier
+
+networks:
+  front-tier:
+  back-tier:
+
+volumes:
+  db-data:

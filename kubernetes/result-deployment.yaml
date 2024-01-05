@@ -1,0 +1,33 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: result
+spec:
+  selector:
+    matchLabels:
+      app: result
+  template:
+    metadata:
+      labels:
+        app: result
+    spec:
+      containers:
+      - name: result
+        image: melkhia/result
+        ports:
+          - containerPort: 80
+            protocol: TCP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: result
+spec:
+  type: NodePort
+  selector:
+    app: result
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 80
+      nodePort: 30007
